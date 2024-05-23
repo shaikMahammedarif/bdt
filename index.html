@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Browser</title>
+</head>
+
+<body>
+  
+    <p>
+        Hadoop Commands
+    
+
+- `hadoop version`
+- `hadoop fs -ls /`
+- `hadoop fs -mkdir /user/hadoop/`
+- `hadoop fs -put sample.txt /user/data/`
+- `hadoop fs -get /user/data/sample.txt workspace/`
+- `hadoop fs -cat /user/data/sampletext.txt`
+- `hadoop fs -cp /user/hadoop/file1 /user/hadoop/file2`
+- `hadoop fs -appendToFile localfile /user/hadoop/hadoopfile`
+- `hadoop fs -df /user/hadoop/dir1`
+- `hadoop fs -help`
+- `hadoop fs -touchz /user/hadoop/newfile`
+- `hadoop fs -rmdir /user/hadoop/emptydir`
+- `hadoop fs -mv /user/hadoop/file1 /user/hadoop/file2`
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------
+      Word Count
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.*;
+public class WordCount {
+
+
+
+
+
+  public static class TokenizerMapper
+       extends Mapper<Object, Text, Text, IntWritable>{
+
+    private final static IntWritable one = new IntWritable(1);
+    private Text word = new Text();
+
+    public void map(Object key, Text value, Context context
+                    ) throws IOException, InterruptedException {
+      StringTokenizer itr = new StringTokenizer(value.toString());
+      while (itr.hasMoreTokens()) {
+        word.set(itr.nextToken());
+        context.write(word, one);
+      }
+    }
+  }
+
+
+
+
+
+
+
+
+  public static class IntSumReducer
+       extends Reducer<Text,IntWritable,Text,IntWritable> {
+    private IntWritable result = new IntWritable();
+
+    public void reduce(Text key, Iterable<IntWritable> values,
+                       Context context
+                       ) throws IOException, InterruptedException {
+      int sum = 0;
+      for (IntWritable val : values) {
+        sum += val.get();
+      }
+      result.set(sum);
+      context.write(key, result);
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+  public static void main(String[] args) throws Exception {
+    Configuration conf = new Configuration();
+    Job job = Job.getInstance(conf, "word count");
+    job.setJarByClass(WordCount.class);
+    job.setMapperClass(TokenizerMapper.class);
+    job.setCombinerClass(IntSumReducer.class);
+    job.setReducerClass(IntSumReducer.class);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(IntWritable.class);
+    FileInputFormat.addInputPath(job, new Path(args[0]));
+    FileOutputFormat.setOutputPath(job, new Path(args[1]));
+    System.exit(job.waitForCompletion(true) ? 0 : 1);
+  }
+}
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+      2prog:
+
+hadoop version
+hadoop fs -ls /
+hadoop fs -mkdir /user/hadoop/
+hadoop fs -put sample.txt /user/data/
+hadoop fs -get /user/data/sample.txt workspace/
+hadoop fs -cat /user/data/sampletext.txt
+hadoop fs -cp /user/hadoop/file1 /user/hadoop/file2
+hadoop fs -appendToFile localfile /user/hadoop/hadoopfile
+hadoop fs -df /user/hadoop/dir1
+hadoop fs -help
+hadoop fs -touchz /user/hadoop/emptyfile
+hadoop fs -rmdir /user/hadoop/emptydir
+hadoop fs -mv /user/hadoop/file1 /user/hadoop/file2
+
+3prog:
+
+1. Set Up Java Project
+Create Java Project:
+Open your IDE (like Eclipse or IntelliJ).
+Create a new Java Project named WordCount.
+Add the required Hadoop libraries by adding external JARs to the project build path.
+2. Create Input File
+Open Terminal:
+	cat > /home/cloudera/inputFile.txt
+Enter your words and save the file.
+3. Set Up HDFS
+Create Directory in HDFS:
+	hdfs dfs -mkdir /inputnew
+Put Input File in HDFS:
+	hdfs dfs -put /home/cloudera/inputFile.txt /inputnew/
+Verify File in HDFS:	
+	hdfs dfs -cat /inputnew/inputFile.txt
+4. Implement WordCount Program
+Create WordCount.java: Below is the complete Java code for the WordCount program.
+java
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class WordCount {
+
+    public static class TokenizerMapper extends Mapper<Object, Text, Text, IntWritable> {
+        private final static IntWritable one = new IntWritable(1);
+        private Text word = new Text();
+
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            StringTokenizer itr = new StringTokenizer(value.toString());
+            while (itr.hasMoreTokens()) {
+                word.set(itr.nextToken());
+                context.write(word, one);
+            }
+        }
+    }
+
+    public static class IntSumReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+        private IntWritable result = new IntWritable();
+
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable val : values) {
+                sum += val.get();
+            }
+            result.set(sum);
+            context.write(key, result);
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "word count");
+        job.setJarByClass(WordCount.class);
+        job.setMapperClass(TokenizerMapper.class);
+        job.setCombinerClass(IntSumReducer.class);
+        job.setReducerClass(IntSumReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+
+5. Compile and Package the Program
+	Compile the Program:
+	Ensure all Hadoop libraries are in your classpath.
+	Compile the WordCount.java file.
+ Create JAR File:
+	jar -cvf wordcount.jar -C <compiled_classes_directory> .
+6. Run the WordCount Program
+	hadoop jar /home/cloudera/wordcount.jar WordCount 	/inputnew/inputFile.txt /output_new
+7. Check Output
+	Display Output:
+	hdfs dfs -cat /output_new/part-r-00000
+
+Expected Output
+The output will display the frequency of each distinct word in the input file. For example, if the input file contains:
+hello world
+hello hadoop
+
+
+hello    2
+hadoop   1
+world    1
+
+4prog:
+
+Steps
+1. Set Up the Project
+Create Java Project:
+Open your IDE (like Eclipse or IntelliJ).
+Create a new Java Project named WordCount.
+Add the required Hadoop libraries by adding external JARs to the project build path.
+2. Download and Prepare Gutenberg Dataset
+Download Gutenberg Dataset:
+Download the dataset from Gutenberg.
+Save the file in the directory /home/cloudera/gutenbergdata/.
+3. Set Up HDFS
+Create Directory in HDFS:
+	hdfs dfs -mkdir /guteninput
+Put Input File in HDFS:
+	hdfs dfs -put /home/cloudera/gutenbergdata/pg4300.txt /guteninput/
+Verify File in HDFS:
+	hdfs dfs -cat /guteninput/pg4300.txt
+4. Implement WordCount Program....
+........
+
+Create JAR File:
+	jar -cvf wordcount.jar -C <compiled_classes_directory> .
+
+6. Run the WordCount Program
+Execute Hadoop Job:
+	hadoop jar /home/cloudera/wordcount.jar WordCount /guteninput/pg4300.txt /gutenoutput
+
+Display Output:
+	hdfs dfs -cat /gutenoutput/part-r-00000
+
+5prog:
+
+Steps
+1. Set Up and Load Data
+Open Terminal and Start Pig:
+	pig
+Load Data into Pig:
+Assuming gprec.txt contains data in the following format:
+Copy code
+1,BranchA,100
+2,BranchB,200
+3,BranchC,150
+Load the data:
+	gprec_data = LOAD 'gprec.txt' USING PigStorage(',') AS 	(branchid:int, branch:chararray, strength:int);
+Verify Data Load:
+	DUMP gprec_data;
+Describe Operator
+Describe the Schema:
+	DESCRIBE gprec_data;
+Expected Output:
+	gprec_data: {branchid: int, branch: chararray, strength: int}
+Foreach Operator
+Generate Specified Columns:
+	foreach_opr = FOREACH gprec_data GENERATE branch, strength;
+Dump the Result:
+	DUMP foreach_opr;
+Expected Output:
+Copy code
+(BranchA,100)
+(BranchB,200)
+(BranchC,150)
+
+Transform Column Data:
+	foreach_opr2 = FOREACH gprec_data GENERATE LOWER(branch);
+Dump the Transformed Data:
+	DUMP foreach_opr2;
+Expected Output:
+scss
+Copy code
+(brancha)
+(branchb)
+(branchc)
+Order By Operator
+Order Data by Strength in Descending Order:
+	orderby_opr = ORDER gprec_data BY strength DESC;
+Dump the Ordered Data:
+	DUMP orderby_opr;
+Expected Output:
+scss
+Copy code
+(2,BranchB,200)
+(3,BranchC,150)
+(1,BranchA,100)
+
+Summary of Pig Latin Script
+-- Load data
+gprec_data = LOAD 'gprec.txt' USING PigStorage(',') AS (branchid:int, branch:chararray, strength:int);
+
+-- Verify data load
+	DUMP gprec_data;
+
+-- Describe the schema
+	DESCRIBE gprec_data;
+
+-- Generate specified columns
+	foreach_opr = FOREACH gprec_data GENERATE branch, strength;
+DUMP foreach_opr;
+
+-- Transform column data
+	foreach_opr2 = FOREACH gprec_data GENERATE LOWER(branch);
+DUMP foreach_opr2;
+
+-- Order data by strength in descending order
+	orderby_opr = ORDER gprec_data BY strength DESC;
+	DUMP orderby_opr;
+Running the Scripts
+Start Pig from the terminal:
+	pig
+Execute the Pig Latin commands by typing them or running a script file containing the above commands.
+
+By following these steps, you will successfully use the DESCRIBE, FOREACH, and ORDER BY operators in Pig to load data, view its schema, transform it, and sort it accordingly.
+
+
+    </p>  
+  <script src="script.js"></script>
+</body>
+
+</html>
